@@ -57,6 +57,31 @@
       background-color: white;
     }
 
+    #place-info {
+      position: absolute;
+      bottom: 25px;
+      right: 25px;
+      width: 300px;
+      height: 175px;
+      border: 3px solid black;
+      border-radius: 5px;
+      background-color: rgba(255,255,255,.9);
+      padding: 10px;
+
+      display: none;
+    }
+    #place-info .name {
+      font-size: 24px;
+      margin: 0;
+    }
+    #place-info ul {
+      list-style: none;
+      margin: 10px 0 0 0;
+      padding: 0;
+      line-height: 1.5em;
+      font-size: 18px;
+    }
+
     .q0-9 { fill:rgb(255,213,213); }
     .q1-9 { fill:rgb(255,170,170); }
     .q2-9 { fill:rgb(255,128,128); }
@@ -89,6 +114,14 @@
   <div id="wrapper">
     <h1 id="page-title">Wage Theft in the United States</h1>
     <svg id="map" width="960" height="600"></svg>
+    <div id="place-info">
+      <h2 class="name">County or City Name</h2>
+      <ul>
+        <li class="population">Population: ###</li>
+        <li class="people-affected">People Affected: ###</li>
+        <li class="total-money">Total Money: $#####</li>
+      </ul>
+    </div>
     <paper-button raised id="reset">Reset Map</paper-button>
   </div>
   <script>
@@ -141,33 +174,27 @@
     }
 
     function clicked(d) {
+      $('#place-info').fadeIn('500');
+
       var x, y, k;
 
       if (d && centered !== d) {
         var centroid = path.centroid(d);
         x = centroid[0];
         y = centroid[1];
-        k = 4;
+        k = 10;
         centered = d;
+
+        g.selectAll("path")
+        .classed("active", centered && function(d) { return d === centered; });
+  
+        g.transition()
+        .duration(750)
+        .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")scale(" + k + ")translate(" + -x + "," + -y + ")")
+        .style("stroke-width", 1.5 / k + "px");
+
         $reset.show();
-
-      } else {
-        x = width / 2;
-        y = height / 2;
-        k = 1;
-        centered = null;
-        $reset.hide();
-
       }
-
-      g.selectAll("path")
-      .classed("active", centered && function(d) { return d === centered; });
-
-      g.transition()
-      .duration(750)
-      .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")scale(" + k + ")translate(" + -x + "," + -y + ")")
-      .style("stroke-width", 1.5 / k + "px");
-
     }
 
     $reset.on('click', function (e) {
@@ -185,6 +212,7 @@
       .style("stroke-width", 1.5 / k + "px");
 
       $reset.hide();
+      $('#place-info').fadeOut('500');
     });
   </script>
 </body>
