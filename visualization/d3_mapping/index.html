@@ -21,7 +21,9 @@
       font-family: "Raleway", "Helvetica Neue", helvetica;
     }
     #wrapper {
+      position: relative;
       width: 960px;
+      height: 720px;
       margin: 0 auto;
     }
 
@@ -29,6 +31,7 @@
       font-weight: normal;
       font-size: 48px;
       text-align: center;
+      margin: 10px 0;
     }
 
     .counties {
@@ -50,17 +53,22 @@
       stroke-linejoin: round;
     }
 
+    .legend .block {
+        width: 15px;
+        height: 15px;
+    }
+
     #reset {
-      position: relative;
-      left: 8px;
-      top: -60px;
+      position: absolute;
+      left: 5px;
+      bottom: 65px;
       background-color: white;
     }
 
     #place-info {
       position: absolute;
-      bottom: 25px;
-      right: 25px;
+      bottom: 65px;
+      right: 10px;
       width: 300px;
       height: 175px;
       border: 3px solid black;
@@ -91,6 +99,7 @@
     .q6-9 { fill:rgb(212,0,0); }
     .q7-9 { fill:rgb(170,0,0);}
     .q8-9 { fill:rgb(128,0,0); }
+    .q9-9 { fill:rgb(85,0,0); }
 
     button {
       padding: 10px 10px 10px 10px;
@@ -114,6 +123,21 @@
   <div id="wrapper">
     <h1 id="page-title">Wage Theft in the United States</h1>
     <svg id="map" width="960" height="600"></svg>
+    <paper-button raised id="reset">Reset Map</paper-button>
+    <svg class="legend" width="500">
+      <text x="0" y="12">0 <</text>
+      <rect class="block q0-9" x="25"></rect>
+      <rect class="block q1-9" x="45"></rect>
+      <rect class="block q2-9" x="65"></rect>
+      <rect class="block q3-9" x="85"></rect>
+      <rect class="block q4-9" x="105"></rect>
+      <rect class="block q5-9" x="125"></rect>
+      <rect class="block q6-9" x="145"></rect>
+      <rect class="block q7-9" x="165"></rect>
+      <rect class="block q8-9" x="185"></rect>
+      <rect class="block q9-9" x="205"></rect>
+      <text x="225" y="12">>1,000,000</text>
+    </svg>
     <div id="place-info">
       <h2 class="name">County or City Name</h2>
       <ul>
@@ -122,7 +146,6 @@
         <li class="total-money">Total Money: $#####</li>
       </ul>
     </div>
-    <paper-button raised id="reset">Reset Map</paper-button>
   </div>
   <script>
     var $reset = $('paper-button[id=reset]').hide()
@@ -136,7 +159,7 @@
 
     var quantize = d3.scaleQuantize()
         .domain([0, 1000000])
-        .range(d3.range(9).map(function(i) { return "q" + i + "-9"; }));
+        .range(d3.range(10).map(function(i) { return "q" + i + "-9"; }));
 
     var projection = d3.geoAlbersUsa()
         .scale(1280)
