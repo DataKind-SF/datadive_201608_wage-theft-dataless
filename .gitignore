@@ -91,3 +91,6 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+# Ignore database file types
+.sqlite
