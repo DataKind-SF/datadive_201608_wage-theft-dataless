@@ -1,25 +1,49 @@
 ---
-title: "data_dive_scratch_2"
+title: Preliminary Modeling
 author: "Annamaria Prati"
-date: "August 13, 2016"
+date: "August 14, 2016"
 output: html_document
 ---
 
-Loading the data and subsetting to only relevant columns; delete cases that have an NA in one of the columns for smoother running down the road (it deletes 104 total cases):
+Loading the data and subsetting to only relevant columns and to only include the state of CA (demographic data is only complete for CA cases); delete cases that have an NA in one of the columns for smoother running down the road (it deletes 8 total cases); make NAIC level 2 codes a factor:
 
 ```{r}
 setwd("~/Desktop")
-whd_clean <- read.csv("whd_whisard.naicNumericLevels.csv", header = TRUE)
 
-vars <- c("case_id", "legal_name", "st_cd", "zip_cd", "naic_cd", "naic_cd_lvl2", "case_violtn_cnt", "cmp_assd_cnt", "ee_violtd_cnt", "bw_atp_amt", "flsa_bw_atp_amt", "flsa_ee_atp_cnt", "flsa_mw_bw_atp_amt", "flsa_ot_bw_atp_amt", "flsa_15a3_bw_atp_amt", "flsa_cmp_assd_amt")
+whd_clean <- read.csv("whd_demographic_industry_violations_naicNumericLevels.csv", header = TRUE)
 
-sub <- whd_clean[, vars]
+#View(whd_clean)
+
+library(dplyr)
+
+# only CA cases are complete, so filter so only CA cases are present
+
+whd_ca <- filter(whd_clean, st_cd=="CA")
+
+#vars <- c("case_id", "trade_nm", "County", "naic_cd", "naic_cd_lvl2", "case_violtn_cnt", "cmp_assd_cnt", "ee_violtd_cnt", "bw_atp_amt", "flsa_bw_atp_amt", "flsa_ee_atp_cnt", "flsa_mw_bw_atp_amt", "flsa_ot_bw_atp_amt", "flsa_15a3_bw_atp_amt", "flsa_cmp_assd_amt", "Industry_NAICS2_Employees", "Industry_NAICS2_Avg.Weekly.Pay", "Industry_NAICS2_Industry", "AGEGRP", "TOT_POP", "TOT_MALE", "TOT_FEMALE", "WA_MALE", "WA_FEMALE")
+
+vars <- c("case_id", "trade_nm", "naic_cd", "naic_cd_lvl2", "case_violtn_cnt", "cmp_assd_cnt", "ee_violtd_cnt", "bw_atp_amt", "flsa_bw_atp_amt", "flsa_ee_atp_cnt", "flsa_mw_bw_atp_amt", "flsa_ot_bw_atp_amt", "flsa_15a3_bw_atp_amt", "flsa_cmp_assd_amt")
+
+
+sub <- whd_ca[, vars]
+
+summary(is.na(sub))
 
 sub <- na.omit(sub)
 
+is.factor(sub$naic_cd_lvl2)
+
+sub$naic_cd_lvl2 <- as.factor(sub$naic_cd_lvl2)
+is.factor(sub$naic_cd_lvl2)
+
+
 ```
 
-Defining utility:
+##Dependent variable
+
+Defining most egregious (large amounts of backwages or high number of workers) and vulnerable (minimum wage and low wage earners) cases, aka "utility"
+
+*Note - this is a very crude measure of utility, and does not weight for vulnerable cases and probability of being a violator is not properly calculated (should group by company or industry); future work should better define this measure.*
 
 From the hackpad:
 
@@ -36,8 +60,6 @@ Because of the high number of 0s in the baseline variables, considered these 0s 
 Because of the high cluster of utility scores around 0, logged utility in new variable called `log_utility`.
 
 Because of wide range of wide range for `log_utility`, scaled and recentered data. Final variable for use is `scale_utility`.
-
-In future versions, would be nice to better define utility to give greater weight to cases where the back wages are for low wage or minimum wage earners.
 
 ```{r}
 # likelihood of being a violator
@@ -77,18 +99,20 @@ hist(sub$scale_utility)
 
 ```
 
+##Feature Selection
 
-Examining available data; automated feature selection (such as through `caret package` was too much for my laptop):
+Examining available data; automated feature selection (such as through `caret package`) was too much for my laptop.
 
 ```{r}
 names(sub)
 
 ```
 
-Include all variables that are not involved in the utility calculation: `st_cd` as a factor; `naic_cd_lvl2`; `cmp_assd_cnt`; `flsa_mw_atp_amt`; `flsa_ot_bw_atp_amt`; `flsa_15a3_bw_atp_amt`.  
+For preliminary analysis, included variables that are not involved in the utility calculation but not demographic data: `naic_cd_lvl2`; `cmp_assd_cnt`; `flsa_mw_atp_amt`; `flsa_ot_bw_atp_amt`; `flsa_15a3_bw_atp_amt`.  
 
 Included only `naic_cd_lvl2` instead of the other NAICs since it had more detail than the lvl1 variable but took less time and had fewer categories than a lvl3 variable, and allowed for industry to be a variable.
 
+*Note: for future analysis, would ideally find features that would not be known a priori, i.e. find combinations of demographic data or business patterns that are highly correlated with the variables used in the analysis.*
 
 Randomly breaking into training and testing data (70-30 split):
 
@@ -108,7 +132,7 @@ Note that models are being evaluated for minimizing mean square error.
 Start with the simplest model, OLS:
 
 ```{r}
-ols <- lm(scale_utility ~ st_cd + as.factor(naic_cd_lvl2) + cmp_assd_cnt + flsa_mw_bw_atp_amt + flsa_ot_bw_atp_amt + flsa_15a3_bw_atp_amt, data = training)
+ols <- lm(scale_utility ~ naic_cd_lvl2 + cmp_assd_cnt + flsa_mw_bw_atp_amt + flsa_ot_bw_atp_amt + flsa_15a3_bw_atp_amt, data = training)
 
 predict_ols <- predict(ols, testing)
 
@@ -119,13 +143,15 @@ mse_ols
 
 Next, Random Forest, a more complicated model:
 
-```{r}
+```{r evaluate = FALSE}
 library(randomForest)
 cores <- parallel::detectCores()
 
 set.seed(123)
 
-rf <- randomForest(scale_utility ~ naic_cd_lvl2 + cmp_assd_cnt + flsa_mw_bw_atp_amt + flsa_ot_bw_atp_amt + flsa_15a3_bw_atp_amt, data = training, ntree = 100, d.trace = T, cores = cores)
+# did not include st_cd bc randomForest cannot handle categories with more than 53 categories
+
+rf <- randomForest(scale_utility ~ naic_cd_lvl2 + cmp_assd_cnt + flsa_mw_bw_atp_amt + flsa_ot_bw_atp_amt + flsa_15a3_bw_atp_amt, data = training, ntree = 200, d.trace = T, cores = cores, importance = TRUE)
 
 predict_rf <- predict(rf, newdata = testing)
 
@@ -138,14 +164,15 @@ mse_ols
 ```
 
 OLS has lower MSE, but it is close enough that cross-validation and hyperperameter tuning might change result.
-In the past I've had good success with bartMachine (Bayesian Additive Regression Trees), so I tried that as well (caution, it takes a long time to run):
 
-```{r}
+In the past I've had good success with bartMachine (Bayesian Additive Regression Trees), so I tried that as well (caution, it takes a long time to run); *NOTE there is a bug in this model and I have not yet debugged it, so have not yet run and evaluated*:
+
+```{r evaluate = FALSE}
 library(bartMachine)
 
 set_bart_machine_num_cores(parallel::detectCores())
 
-bart <- bartMachine(X = training[, c("st_cd", "naic_cd", "cmp_assd_cnt", "flsa_mw_bw_atp_amt", "flsa_ot_bw_atp_amt", "flsa_15a3_bw_atp_amt")], y = training$scale_utility, num_trees = 3, num_burn_in = 10, mem_cache_for_speed = TRUE)
+bart <- bartMachine(X = training[, c("st_cd", "naic_cd", "cmp_assd_cnt", "flsa_mw_bw_atp_amt", "flsa_ot_bw_atp_amt", "flsa_15a3_bw_atp_amt")], y = training$scale_utility, num_trees = 50, num_burn_in = 250, mem_cache_for_speed = TRUE)
 
 
 predict_bart <- predict(bart, newdata = testing[, c("st_cd", "naic_cd", "cmp_assd_cnt", "flsa_mw_bw_atp_amt", "flsa_ot_bw_atp_amt", "flsa_15a3_bw_atp_amt")])
@@ -156,19 +183,20 @@ mse_bart
 mse_ols
 ```
 
-Finally, try `xgboost`, a tree-based model that I've never worked with before but was recommended during data dive:
+Finally, try `xgboost`, a tree-based model that I've never worked with but was recommended at the Data Dive:
+
+*Note: this model result seems too good to be true, either there is a mistake or I am overfitting*
 
 ```{r}
 set.seed(123)
 
 library(xgboost)
 
-matrix_train <- model.matrix(scale_utility ~ st_cd + as.factor(naic_cd_lvl2) + cmp_assd_cnt + flsa_mw_bw_atp_amt + flsa_ot_bw_atp_amt + flsa_15a3_bw_atp_amt -1, data = training)
+matrix_train <- model.matrix(scale_utility ~ as.factor(naic_cd_lvl2) + cmp_assd_cnt + flsa_mw_bw_atp_amt + flsa_ot_bw_atp_amt + flsa_15a3_bw_atp_amt -1, data = training)
 
-matrix_test <- model.matrix(scale_utility ~ st_cd + as.factor(naic_cd_lvl2) + cmp_assd_cnt + flsa_mw_bw_atp_amt + flsa_ot_bw_atp_amt + flsa_15a3_bw_atp_amt -1, data = testing)
+matrix_test <- model.matrix(scale_utility ~ as.factor(naic_cd_lvl2) + cmp_assd_cnt + flsa_mw_bw_atp_amt + flsa_ot_bw_atp_amt + flsa_15a3_bw_atp_amt -1, data = testing)
 
-xgb <- xgboost(data = model_matrix, label = sub$scale_utility, max.depth = 2, eta = 1, nrounds = 5, objective = "reg:linear") 
-
+xgb <- xgboost(data = matrix_train, label = training$scale_utility, max.depth = 2, nthread = 2, eta = 1, nrounds = 2, objective = "reg:linear") 
 
 predict_xgb <- predict(xgb, newdata = matrix_test)
 
@@ -176,6 +204,26 @@ mse_xgb <- mean((predict_xgb - testing$scale_utility)^2)
 
 mse_xgb
 
+# by far the best MSE of the models
+
+# for presentation figure at Data Dive
+
+sq_error_xgb <- (predict_xgb - testing$scale_utility)^2
+
+plot(testing$scale_utility, pch = 19)
+lines(predict_xgb, col = "red")
+
+plot(testing$scale_utility, sq_error_xgb, pch=19, col = "blue", ylab = "Squared Error", xlab = "Target 'Egregious and Vulnerable' Score", main = "xgboost Fit ")
+
+# interpretation: good at prediction when score is near 0 (makes sense, most of the data is around 0)
+# difficulty predicting more extreme egregious/vulnerable scores (fewer cases, but these are the cases you would most want to predict)
+
 ```
 
-Seems to be easy to overfit, but very powerful predictive power - the lowest MSE by far, so we should investigate further.
+So, in summary, future work that needs to be done:
+
+- better define utility
+- better feature selection
+- tune parameters for randomForest model
+- debug bartMachine model and evaluate
+- xgboost model seems too good to be true (possible overfit?), so should cross validate and double check results
