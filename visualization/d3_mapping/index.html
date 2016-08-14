@@ -241,8 +241,6 @@
           .data(topojson.feature(us, us.objects.counties).features)
         .enter().append("path")
           .attr("class", function(d) {
-                console.log(rateById.get(d.id))
-
             return quantize(rateById.get(d.id));
           })
           .attr("d", path)
