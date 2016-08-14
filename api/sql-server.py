@@ -17,16 +17,16 @@ parser = reqparse.RequestParser(bundle_errors=True)
 class CaseList(Resource):
     def get(self):
         conn = e.connect()
-        stmt = "select * from whd_whisard limit 10"
+        stmt = "select * from whd_whisard limit 10" # temp limit, can update
         query = conn.execute(stmt)
         rows = query.cursor.fetchall()
-        keys = [member[0] for member in query.cursor.description]
+        keys = [member[0] for member in query.cursor.description] # get all column names
 
         return_result = []
 
         for row in rows:
             result_dict = {}
-            for key, value in zip(keys, row):
+            for key, value in zip(keys, row): # column_name, column_value
                 result_dict[key] = value
             return_result.append(result_dict)
 
