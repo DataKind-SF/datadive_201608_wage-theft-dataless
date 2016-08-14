@@ -70,12 +70,32 @@ class CasesByZip(Resource):
 
         return return_result
 
+class CasesByNAICCd(Resource):
+    def get(self, naic_cd=None):
+        conn = e.connect()
+        stmt = "select * from whd_whisard"
+        if (naic_cd is not None):
+            stmt += " where naic_cd=" + str(naic_cd)
+        query = conn.execute(stmt)
+        rows = query.cursor.fetchall()
+        keys = [member[0] for member in query.cursor.description]
+        print keys, rows
+
+        return_result = []
+
+        for row in rows:
+            result_dict = {}
+            for key, value in zip(keys, row):
+                result_dict[key] = value
+            return_result.append(result_dict)
+
+        return return_result
 
 # Add all REST definitions here
 api.add_resource(Case, '/cases/<case_id>')
 api.add_resource(CaseList, '/cases')
-api.add_resource(CasesByZip, '/zip/<zip_cd>/cases')
-# api.add_resource(CasesByNAICId3, '/naic_id_3/<naic_id_2>/cases')
+api.add_resource(CasesByZip, '/zip_cd/<zip_cd>/cases')
+api.add_resource(CasesByNAICCd, '/naic_cd/<naic_cd>/cases')
 
 
 if __name__ == '__main__':
