@@ -56,13 +56,15 @@
       display: none;
       fill: white;
       stroke: black;
-      stroke-width: 0.05;
+      stroke-width: 0.025;
     }
     .city-text {
       display: none;
-      font-size: .3pt;
+      font-size: .4pt;
       fill: #fff;
       font-weight: bold;
+      stroke-width: .025;
+      stroke: black;
     }
 
     .legend .block {
@@ -126,6 +128,10 @@
       font-size: 12px;
       text-align: center;
       cursor: pointer;
+    }
+
+    text {
+      visibility: visible;
     }
   </style>
 </head>
@@ -191,17 +197,9 @@
 
     d3.queue()
       .defer(d3.json, "us.json")
-      .defer(d3.json,
-        "fips_data.json",
+      .defer(d3.csv, "fips_backwages.csv",
         function(d) {
-          console.log(d);
-          rateById.set(
-                        d[0].id,
-                        d[0].name,
-                        d[0].popul,
-                        d[0].wages,
-                        d[0].count
-                      );
+          rateById.set(d.id, +d.amount);
                     })
       .defer(d3.csv, "US_Cities_Lat_LonSmall_2.csv")
       .await(ready);
@@ -235,7 +233,7 @@
           $(this).attr('class', 'city-circle').attr({
             cx: location[0],
             cy: location[1],
-            r: ".2"
+            r: ".15"
           });
         });
                   
@@ -246,8 +244,8 @@
         .each(function (d) {
           var location = projection([d.longitude, d.latitude]);
           $(this).attr('class', 'city-text').attr({
-            x: location[0]+.35,
-            y: location[1]+.15,
+            x: location[0]+.25,
+            y: location[1]+.22,
           })
           .text(d.name);
         });
@@ -262,7 +260,7 @@
         var centroid = path.centroid(d);
         x = centroid[0];
         y = centroid[1];
-        k = 30;
+        k = 40;
         centered = d;
 
         g.selectAll("path")
