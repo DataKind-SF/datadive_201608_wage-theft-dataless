@@ -34,15 +34,16 @@
       margin: 10px 0;
     }
 
-    .counties {
+    #map .counties {
       fill: none;
     }
-    .counties path {
+    #map .counties path {
       stroke: #fff;
       stroke-width: .25;
       stroke-linejoin: round;
+      fill: rgb(255,235,235);
     }
-    .counties path:hover {
+    #map .counties path:hover {
       fill: #000;
     }
 
@@ -90,16 +91,16 @@
       font-size: 18px;
     }
 
-    .q0-9 { fill:rgb(255,213,213); }
-    .q1-9 { fill:rgb(255,170,170); }
-    .q2-9 { fill:rgb(255,128,128); }
-    .q3-9 { fill:rgb(255,85,85); }
-    .q4-9 { fill:rgb(255,42,42); }
-    .q5-9 { fill:rgb(255,0,0); }
-    .q6-9 { fill:rgb(212,0,0); }
-    .q7-9 { fill:rgb(170,0,0);}
-    .q8-9 { fill:rgb(128,0,0); }
-    .q9-9 { fill:rgb(85,0,0); }
+    .q0-9 { fill:rgb(255,213,213) !important; }
+    .q1-9 { fill:rgb(255,170,170) !important; }
+    .q2-9 { fill:rgb(255,128,128) !important; }
+    .q3-9 { fill:rgb(255,85,85) !important; }
+    .q4-9 { fill:rgb(255,42,42) !important; }
+    .q5-9 { fill:rgb(255,0,0) !important; }
+    .q6-9 { fill:rgb(212,0,0) !important; }
+    .q7-9 { fill:rgb(170,0,0) !important;}
+    .q8-9 { fill:rgb(128,0,0) !important; }
+    .q9-9 { fill:rgb(85,0,0) !important; }
 
     button {
       padding: 10px 10px 10px 10px;
@@ -212,10 +213,10 @@
                         $(this).attr({
                           cx: location[0], cy: location[1],
                                      //r: Math.sqrt(+d.population * 0.000004),
-                          r: "2",
+                          r: ".8",
                           fill:"white",
                                      stroke:"black",
-                                     'stroke-width':"0.5",
+                                     'stroke-width':"0.2",
                           visibility:"hidden"
                       });
                   })
@@ -228,8 +229,8 @@
                   .each(function (d) {
                         var location = projection([d.longitude, d.latitude]);
                         
-                        $(this).attr({ x: location[0]+3,
-                                       y: location[1],
+                        $(this).attr({ x: location[0]+1,
+                                       y: location[1]+.65,
                                       'font-family':"sans-serif",
                                       'font-size':"2",
                                        fill:"#F1F8E9",
