@@ -184,7 +184,7 @@
     d3.queue()
         .defer(d3.json, "us.json")
         .defer(d3.csv, "fips_backwages.csv", function(d) { rateById.set(d.id, +d.amount); })
-        .defer(d3.csv, "US_Cities_Lat_LonSmall.csv")
+        .defer(d3.csv, "US_Cities_Lat_LonSmall_2.csv")
                
         .await(ready);
 
@@ -222,10 +222,10 @@
                         $(this).attr({
                           cx: location[0], cy: location[1],
                                      //r: Math.sqrt(+d.population * 0.000004),
-                          r: ".8",
+                          r: ".2",
                           fill:"white",
                                      stroke:"black",
-                                     'stroke-width':"0.2",
+                                     'stroke-width':"0.05",
                           visibility:"hidden"
                       });
                   })
@@ -238,14 +238,14 @@
                   .each(function (d) {
                         var location = projection([d.longitude, d.latitude]);
                         
-                        $(this).attr({ x: location[0]+1,
-                                       y: location[1]+.65,
+                        $(this).attr({ x: location[0]+0.3,
+                                       y: location[1]+.15,
                                       'font-family':"sans-serif",
-                                      'font-size':"2",
+                                      'font-size':"0.4",
                                        fill:"#F1F8E9",
                                        visibility:"hidden",
-                                     stroke:"black",
-                                     "stroke-width":"0.1",
+                                     //stroke:"black",
+                                     //"stroke-width":"0.5",
                                      "font-weight":"bold"
                                      
                                      
@@ -288,7 +288,7 @@
         var centroid = path.centroid(d);
         x = centroid[0];
         y = centroid[1];
-        k = 10;
+        k = 30;
         centered = d;
 
         g.selectAll("path")
