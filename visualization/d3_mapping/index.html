@@ -125,6 +125,15 @@
     <svg id="map" width="960" height="600"></svg>
     <paper-button raised id="reset">Reset Map</paper-button>
     <svg class="legend" width="500">
+      <filter id="dropshadow" height="130%">
+        <feGaussianBlur in="SourceAlpha" stdDeviation="3"/> <!-- stdDeviation is how much to blur -->
+        <feOffset dx="2" dy="2" result="offsetblur"/> <!-- how much to offset -->
+        <feMerge>
+          <feMergeNode/> <!-- this contains the offset blurred image -->
+          <feMergeNode in="SourceGraphic"/> <!-- this contains the element that the filter is applied to -->
+        </feMerge>
+      </filter>
+
       <text x="0" y="12">0 <</text>
       <rect class="block q0-9" x="25"></rect>
       <rect class="block q1-9" x="45"></rect>
@@ -212,10 +221,10 @@
                         $(this).attr({
                           cx: location[0], cy: location[1],
                                      //r: Math.sqrt(+d.population * 0.000004),
-                          r: "2",
+                          r: "0.8",
                           fill:"white",
                                      stroke:"black",
-                                     'stroke-width':"0.5",
+                                     'stroke-width':"0.2",
                           visibility:"hidden"
                       });
                   })
@@ -228,12 +237,17 @@
                   .each(function (d) {
                         var location = projection([d.longitude, d.latitude]);
                         
-                        $(this).attr({ x: location[0]+3,
-                                       y: location[1],
+                        $(this).attr({ x: location[0]+1,
+                                       y: location[1]+0.65,
                                       'font-family':"sans-serif",
                                       'font-size':"2",
                                        fill:"#F1F8E9",
-                                     visibility:"hidden"
+                                       visibility:"hidden",
+                                     stroke:"black",
+                                     "stroke-width":"0.1",
+                                     "font-weight":"bold"
+                                     
+                                     
                                      })
                                 .text(d.name)
 
