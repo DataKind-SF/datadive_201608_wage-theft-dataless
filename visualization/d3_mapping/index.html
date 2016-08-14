@@ -291,9 +291,8 @@
         .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")scale(" + k + ")translate(" + -x + "," + -y + ")")
         .style("stroke-width", 1.5 / k + "px");
 
-      d3.selectAll("circle").attr("visibility","hidden")
-      d3.selectAll("text").attr("visibility","hidden")
-
+      $('.city-circle').hide();
+      $('.city-text').hide();
       $reset.hide();
       $('#place-info').fadeOut('500');
     });
