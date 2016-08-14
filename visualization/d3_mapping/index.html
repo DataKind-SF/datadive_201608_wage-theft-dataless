@@ -96,11 +96,11 @@
       bottom: 65px;
       right: 10px;
       width: 300px;
-      height: 175px;
+      height: 125px;
       border: 3px solid black;
       border-radius: 5px;
       background-color: rgba(255,255,255,.9);
-      padding: 10px;
+      padding: 25px;
 
       display: none;
     }
@@ -159,6 +159,18 @@
           <feMergeNode in="SourceGraphic"/> <!-- this contains the element that the filter is applied to -->
         </feMerge>
       </filter>
+      <text x="0" y="12">0 </text>
+      <rect class="block q0-9" x="25"></rect>
+      <rect class="block q1-9" x="45"></rect>
+      <rect class="block q2-9" x="65"></rect>
+      <rect class="block q3-9" x="85"></rect>
+      <rect class="block q4-9" x="105"></rect>
+      <rect class="block q5-9" x="125"></rect>
+      <rect class="block q6-9" x="145"></rect>
+      <rect class="block q7-9" x="165"></rect>
+      <rect class="block q8-9" x="185"></rect>
+      <rect class="block q9-9" x="205"></rect>
+      <text x="225" y="12">> $1,000,000</text>
     </svg>
     <div id="legend">
       <div class="block low-end">0 <</div>
@@ -190,6 +202,7 @@
         height = +svg.attr("height");
 
     var rateById = d3.map();
+    var counties = {};
     var cities = d3.map();
     
     var quantize = d3.scaleQuantize()
@@ -207,10 +220,16 @@
 
     d3.queue()
       .defer(d3.json, "us.json")
-      .defer(d3.csv, "fips_backwages.csv",
-        function(d) {
-          rateById.set(d.id, +d.amount);
-                    })
+      .defer(d3.csv, "fips_data.csv",
+         function(d) {
+            counties[d.id] = {
+              "name": d.name,
+              "population": d.total_pop,
+              "people": d.count,
+              "total_money": d.wages
+            }
+            rateById.set(d.id, +d.wages);
+          })
       .defer(d3.csv, "US_Cities_Lat_LonSmall_2.csv")
       .await(ready);
 
@@ -223,6 +242,12 @@
           .data(topojson.feature(us, us.objects.counties).features)
         .enter().append("path")
           .attr("class", function(d) {
+            if (counties[d.id] != null) {
+              $(this).attr('data-name', counties[d.id]["name"]);
+              $(this).attr('data-population', counties[d.id]["population"]);
+              $(this).attr('data-people', counties[d.id]["people"]);
+              $(this).attr('data-total_money', counties[d.id]["total_money"]);
+            }
             return quantize(rateById.get(d.id));
           })
           .attr("d", path)
@@ -262,7 +287,11 @@
     }
 
     function clicked(d) {
-      //$('#place-info').fadeIn('500');
+      $('#place-info .name').text($(this).data('name'));
+      $('#place-info .population').html("Population: <strong>" + $(this).data('population') + "</strong>");
+      $('#place-info .people-affected').html("People Affected: <strong>" + $(this).data('people') + "</strong>");
+      $('#place-info .total-money').html("Total Backwages: <strong>$" + $(this).data('total_money') + "</strong>");
+      $('#place-info').fadeIn('500');
 
       var x, y, k;
 
@@ -270,7 +299,7 @@
         var centroid = path.centroid(d);
         x = centroid[0];
         y = centroid[1];
-        k = 40;
+        k = 30;
         centered = d;
 
         g.selectAll("path")
