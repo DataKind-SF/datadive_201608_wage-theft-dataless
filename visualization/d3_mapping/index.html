@@ -44,7 +44,8 @@
       fill: rgb(255,235,235);
     }
     #map .counties path:hover {
-      fill: #000 !important;
+      fill: #0000dd !important;
+      cursor: pointer;
     }
 
     .states {
@@ -169,12 +170,12 @@
     var cities = d3.map();
     
     var quantize = d3.scaleQuantize()
-        .domain([0, 1000000])
-        .range(d3.range(10).map(function(i) { return "q" + i + "-9"; }));
+                    .domain([0, 1000000])
+                    .range(d3.range(10).map(function(i) { return "q" + i + "-9"; }));
 
     var projection = d3.geoAlbersUsa()
-        .scale(1280)
-        .translate([width / 2, height / 2]);
+                    .scale(1280)
+                    .translate([width / 2, height / 2]);
 
     var path = d3.geoPath()
         .projection(projection);
@@ -182,12 +183,10 @@
     var g = svg.append("g");
 
     d3.queue()
-        .defer(d3.json, "us.json")
-        .defer(d3.csv, "fips_backwages.csv", function(d) { rateById.set(d.id, +d.amount); })
-        .defer(d3.csv, "US_Cities_Lat_LonSmall_2.csv")
-               
-        .await(ready);
-
+      .defer(d3.json, "us.json")
+      .defer(d3.csv, "fips_backwages.csv", function(d) { rateById.set(d.id, +d.amount); })
+      .defer(d3.csv, "US_Cities_Lat_LonSmall_2.csv")
+      .await(ready);
 
     function ready(error, us, fips_backwages, cities) {
       if (error) throw error;
@@ -204,79 +203,48 @@
           .on("click", clicked);
 
       g.append("path")
-          .datum(topojson.mesh(us, us.objects.states, function(a, b) { return a !== b; }))
-          .attr("class", "states")
-          .attr("d", path)
-          .selectAll("path")
-          
-          
+        .datum(topojson.mesh(us, us.objects.states, function(a, b) { return a !== b; }))
+        .attr("class", "states")
+        .attr("d", path)
+        .selectAll("path");
+
       console.log(cities)
       g.selectAll("circle")
-                  .data(cities)
-                  .enter()
-                  .append("circle")
-                  .each(function (d) {
-                      var location = projection([d.longitude, d.latitude]);
-                        //console.log(d3.select($(this)))
-                        
-                        $(this).attr({
-                          cx: location[0], cy: location[1],
-                                     //r: Math.sqrt(+d.population * 0.000004),
-                          r: ".2",
-                          fill:"white",
-                                     stroke:"black",
-                                     'stroke-width':"0.05",
-                          visibility:"hidden"
-                      });
-                  })
-                  
-                  
-        g.selectAll("text")
-                  .data(cities)
-                  .enter()
-                  .append("text")
-                  .each(function (d) {
-                        var location = projection([d.longitude, d.latitude]);
-                        
-                        $(this).attr({ x: location[0]+0.3,
-                                       y: location[1]+.15,
-                                      'font-family':"sans-serif",
-                                      'font-size':"0.4",
-                                       fill:"#F1F8E9",
-                                       visibility:"hidden",
-                                     //stroke:"black",
-                                     //"stroke-width":"0.5",
-                                     "font-weight":"bold"
-                                     
-                                     
-                                     })
-                                .text(d.name)
-
-                        })
-
-                
-    
-//      console.log(cities)
-      
-     /* g.selectAll("circle")
-      .data([{"Lat":"37.775","Long":"-122.4183333"}])
+        .data(cities)
         .enter()
         .append("circle")
         .each(function (d) {
-              var location = projection([d.Long, d.Lat]);
-              console.log(location)
-              d3.select(this).attr({
-                                   cx: location[0], cy: location[1],
-                                   r: "50",
-                                   });
-              })
-              .style({
-                     fill: 'blue',
-                     opacity: 0.75
-                     });
-
-*/
-
+          var location = projection([d.longitude, d.latitude]);
+          $(this).attr({
+            cx: location[0],
+            cy: location[1],
+            r: ".2",
+            fill:"white",
+            stroke:"black",
+            'stroke-width':"0.05",
+            visibility:"hidden"
+          })
+          .addClass('city-circle');
+        });
+                  
+      g.selectAll("text")
+        .data(cities)
+        .enter()
+        .append("text")
+        .each(function (d) {
+          var location = projection([d.longitude, d.latitude]);
+          $(this).attr({
+            x: location[0]+.35,
+            y: location[1]+.15,
+            'font-family':"sans-serif",
+            'font-size':"0.4",
+            fill:"#fff",
+            visibility:"hidden",
+            "font-weight":"bold"
+          })
+          .addClass('city-text')
+          .text(d.name);
+        });
     }
 
     function clicked(d) {
@@ -292,12 +260,12 @@
         centered = d;
 
         g.selectAll("path")
-        .classed("active", centered && function(d) { return d === centered; });
+          .classed("active", centered && function(d) { return d === centered; });
   
         g.transition()
-        .duration(750)
-        .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")scale(" + k + ")translate(" + -x + "," + -y + ")")
-        .style("stroke-width", 1.5 / k + "px");
+          .duration(750)
+          .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")scale(" + k + ")translate(" + -x + "," + -y + ")")
+          .style("stroke-width", 1.5 / k + "px");
         
         d3.selectAll("circle").attr("visibility","visible")
         d3.selectAll("text").attr("visibility","visible")
@@ -307,18 +275,18 @@
     }
 
     $reset.on('click', function (e) {
-        x = width / 2;
-        y = height / 2;
-        k = 1;
-        centered = null;
+      x = width / 2;
+      y = height / 2;
+      k = 1;
+      centered = null;
 
       g.selectAll("path")
-      .classed("active", centered && function(d) { return d === centered; });
+        .classed("active", centered && function(d) { return d === centered; });
 
       g.transition()
-      .duration(750)
-      .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")scale(" + k + ")translate(" + -x + "," + -y + ")")
-      .style("stroke-width", 1.5 / k + "px");
+        .duration(750)
+        .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")scale(" + k + ")translate(" + -x + "," + -y + ")")
+        .style("stroke-width", 1.5 / k + "px");
 
       d3.selectAll("circle").attr("visibility","hidden")
       d3.selectAll("text").attr("visibility","hidden")
