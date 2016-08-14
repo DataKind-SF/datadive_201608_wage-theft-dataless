@@ -1,0 +1,181 @@
+---
+title: "data_dive_scratch_2"
+author: "Annamaria Prati"
+date: "August 13, 2016"
+output: html_document
+---
+
+Loading the data and subsetting to only relevant columns; delete cases that have an NA in one of the columns for smoother running down the road (it deletes 104 total cases):
+
+```{r}
+setwd("~/Desktop")
+whd_clean <- read.csv("whd_whisard.naicNumericLevels.csv", header = TRUE)
+
+vars <- c("case_id", "legal_name", "st_cd", "zip_cd", "naic_cd", "naic_cd_lvl2", "case_violtn_cnt", "cmp_assd_cnt", "ee_violtd_cnt", "bw_atp_amt", "flsa_bw_atp_amt", "flsa_ee_atp_cnt", "flsa_mw_bw_atp_amt", "flsa_ot_bw_atp_amt", "flsa_15a3_bw_atp_amt", "flsa_cmp_assd_amt")
+
+sub <- whd_clean[, vars]
+
+sub <- na.omit(sub)
+
+```
+
+Defining utility:
+
+From the hackpad:
+
+Utility: # of workers * size of cases * likelihood of company or industry being a violator
+
+Operationalization: 
+
+- number of workers: used `ee_violtd_cnt` - the total number of workers to whom backwages are owed
+- size of cases: used `bw_atp_amt` - the total amount of backwages owed
+- likelihood of company or industry being a ivolated: used new variable `prob_violtn`, which is each case's total number of violations (`case_violtn_cnt`) divided by the total number of violations in the data (from new variable `total_violtn`, which is the sum of `case_violtn_cnt`).
+
+Because of the high number of 0s in the baseline variables, considered these 0s to be very small numbers, so coerced all 0s to 0.1.
+
+Because of the high cluster of utility scores around 0, logged utility in new variable called `log_utility`.
+
+Because of wide range of wide range for `log_utility`, scaled and recentered data. Final variable for use is `scale_utility`.
+
+In future versions, would be nice to better define utility to give greater weight to cases where the back wages are for low wage or minimum wage earners.
+
+```{r}
+# likelihood of being a violator
+
+# because of high number of 0s in case_violtn_cnt, ee_violtd_cnt, and bw_atp_amt, coerce all 0s to 0.1
+
+sub$rec_case_violtn_cnt <- ifelse(sub$case_violtn_cnt==0, 0.1, sub$case_violtn_cnt)
+sub$rec_ee_violtd_cnt <- ifelse(sub$ee_violtd_cnt==0, 0.1, sub$ee_violtd_cnt)
+sub$rec_bw_atp_amt <- ifelse(sub$bw_atp_amt==0, 0.1, sub$bw_atp_amt)
+
+# total number of violations:
+
+total_violtn <- sum(sub$rec_case_violtn_cnt)
+
+# probability company violated; probability is very small, so expressed as a percentage
+
+sub$prob_violtd <- (sub$rec_case_violtn_cnt/total_violtn)*100
+
+# straight utility calculated
+
+sub$utility <- sub$rec_ee_violtd_cnt * sub$rec_bw_atp_amt * sub$prob_violtd
+
+summary(sub$utility)
+
+hist(sub$utility)
+
+sub$log_utility <- ifelse(sub$utility==0, 0.1, sub$utility)
+
+sub$log_utility <- log(sub$log_utility)
+
+summary(sub$log_utility)
+hist(sub$log_utility)
+
+sub$scale_utility <- scale(sub$log_utility, scale = TRUE, center = FALSE)
+
+hist(sub$scale_utility)
+
+```
+
+
+Examining available data; automated feature selection (such as through `caret package` was too much for my laptop):
+
+```{r}
+names(sub)
+
+```
+
+Include all variables that are not involved in the utility calculation: `st_cd` as a factor; `naic_cd_lvl2`; `cmp_assd_cnt`; `flsa_mw_atp_amt`; `flsa_ot_bw_atp_amt`; `flsa_15a3_bw_atp_amt`.  
+
+Included only `naic_cd_lvl2` instead of the other NAICs since it had more detail than the lvl1 variable but took less time and had fewer categories than a lvl3 variable, and allowed for industry to be a variable.
+
+
+Randomly breaking into training and testing data (70-30 split):
+
+```{r}
+stopifnot(require(caTools))
+
+sample <- sample.split(sub, SplitRatio = .70)
+training <- subset(sub, sample == TRUE)
+testing <- subset(sub, sample == FALSE)
+
+```
+
+Finding the best approximate model:
+
+Note that models are being evaluated for minimizing mean square error.
+
+Start with the simplest model, OLS:
+
+```{r}
+ols <- lm(scale_utility ~ st_cd + as.factor(naic_cd_lvl2) + cmp_assd_cnt + flsa_mw_bw_atp_amt + flsa_ot_bw_atp_amt + flsa_15a3_bw_atp_amt, data = training)
+
+predict_ols <- predict(ols, testing)
+
+mse_ols <- mean((predict_ols - testing$utility)^2)
+mse_ols
+
+```
+
+Next, Random Forest, a more complicated model:
+
+```{r}
+library(randomForest)
+cores <- parallel::detectCores()
+
+set.seed(123)
+
+rf <- randomForest(scale_utility ~ naic_cd_lvl2 + cmp_assd_cnt + flsa_mw_bw_atp_amt + flsa_ot_bw_atp_amt + flsa_15a3_bw_atp_amt, data = training, ntree = 100, d.trace = T, cores = cores)
+
+predict_rf <- predict(rf, newdata = testing)
+
+mse_rf <- mean((predict_rf - testing$utility)^2)
+
+mse_rf
+
+mse_ols
+
+```
+
+OLS has lower MSE, but it is close enough that cross-validation and hyperperameter tuning might change result.
+In the past I've had good success with bartMachine (Bayesian Additive Regression Trees), so I tried that as well (caution, it takes a long time to run):
+
+```{r}
+library(bartMachine)
+
+set_bart_machine_num_cores(parallel::detectCores())
+
+bart <- bartMachine(X = training[, c("st_cd", "naic_cd", "cmp_assd_cnt", "flsa_mw_bw_atp_amt", "flsa_ot_bw_atp_amt", "flsa_15a3_bw_atp_amt")], y = training$scale_utility, num_trees = 3, num_burn_in = 10, mem_cache_for_speed = TRUE)
+
+
+predict_bart <- predict(bart, newdata = testing[, c("st_cd", "naic_cd", "cmp_assd_cnt", "flsa_mw_bw_atp_amt", "flsa_ot_bw_atp_amt", "flsa_15a3_bw_atp_amt")])
+
+mse_bart <- mean((predict_bart - testing$scale_utility)^2)
+
+mse_bart
+mse_ols
+```
+
+Finally, try `xgboost`, a tree-based model that I've never worked with before but was recommended during data dive:
+
+```{r}
+set.seed(123)
+
+library(xgboost)
+
+matrix_train <- model.matrix(scale_utility ~ st_cd + as.factor(naic_cd_lvl2) + cmp_assd_cnt + flsa_mw_bw_atp_amt + flsa_ot_bw_atp_amt + flsa_15a3_bw_atp_amt -1, data = training)
+
+matrix_test <- model.matrix(scale_utility ~ st_cd + as.factor(naic_cd_lvl2) + cmp_assd_cnt + flsa_mw_bw_atp_amt + flsa_ot_bw_atp_amt + flsa_15a3_bw_atp_amt -1, data = testing)
+
+xgb <- xgboost(data = model_matrix, label = sub$scale_utility, max.depth = 2, eta = 1, nrounds = 5, objective = "reg:linear") 
+
+
+predict_xgb <- predict(xgb, newdata = matrix_test)
+
+mse_xgb <- mean((predict_xgb - testing$scale_utility)^2)
+
+mse_xgb
+
+```
+
+Seems to be easy to overfit, but very powerful predictive power - the lowest MSE by far, so we should investigate further.
