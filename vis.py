@@ -1,21 +1,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-
-
-datadir = 'data'
-
-judgements_files = 'SJOjudgements2-3.csv'
-data_dic_file = 'whd_data_dictionary.csv'
-whisard = 'whd_whisard.csv'
-
-judgements = pd.read_csv(datadir + '/' + judgements_files)
-data_dic = pd.read_csv(datadir + '/' + data_dic_file)
-df_whiz = pd.read_csv(datadir + '/' + whisard)
-
-# processed data
-df_whiz_p = pd.read_csv('data/processedWhdData/whd_whisard.joinedCounty.csv')
-df_whiz_h = pd.read_csv('data/processedWhdData/whd_whisard.naicHumanReadableLevels.csv')
+import seaborn as sbn
 
 cols_use = ['case_id',
             'trade_nm',
@@ -39,40 +25,85 @@ cols_use = ['case_id',
             'findings_start_date',
             'findings_end_date']
 
+datadir = 'data'
 
-fig, ax = plt.subplots(figsize=(6,8))
-df_whiz_h.groupby('naic_description_lvl2').size().plot(kind='bar', ax=ax)
-# fig.tight_layout()
-fig.show()
+judgements_files = 'SJOjudgements2-3.csv'
+data_dic_file = 'whd_data_dictionary.csv'
+whisard = 'whd_whisard.csv'
 
-df_whiz['findings_start_date_datetime'] = df_whiz['findings_start_date'].replace({'-0': '-'}, regex=True)
-df_whiz['findings_start_date_datetime'] = pd.to_datetime(df_whiz[df_whiz['findings_start_date_datetime']>'2007']['findings_start_date_datetime'])
+judgements = pd.read_csv(datadir + '/' + judgements_files)
+data_dic = pd.read_csv(datadir + '/' + data_dic_file)
+df_whiz = pd.read_csv(datadir + '/' + whisard)
 
+df_zip = pd.read_csv('data/sandbox/zip_code_database_all_us.csv')
 
-df_whiz['findings_start_date'] = pd.to_datetime(df_whiz[df_whiz['findings_start_date']>'1900']['findings_start_date'])
-df_whiz['findings_end_date'] = pd.to_datetime(df_whiz[df_whiz['findings_end_date']>'1900']['findings_end_date'])
+# join whisard and zip and save
+# pd.merge(df_whiz, df_zip, left_on='zip_cd', right_on='zip').to_csv('data/processedWhdData/whd_whisard.joinedCounty.csv')
 
-df_whiz['findings_start_date_m'] = df_whiz['findings_start_date'].apply(lambda x: x.month)
-df_whiz['findings_end_date_m'] = df_whiz['findings_end_date'].apply(lambda x: x.month)
-
-
-
-df_whiz['findings_start_date_y'] = df_whiz['findings_start_date'].apply(lambda x: x.year)
-df_whiz['findings_end_date_y'] = df_whiz['findings_end_date'].apply(lambda x: x.year)
+# processed data
+df_whiz_zip = pd.read_csv('data/processedWhdData/whd_whisard.joinedCounty.csv', index_col=0)
+# df_whiz_h = pd.read_csv('data/processedWhdData/whd_whisard.naicHumanReadableLevels.csv')
 
 
-# df_ncases = pd.DataFrame(df_whiz.groupby(['findings_start_date_y', 'st_cd']).size())
+# convert to datetime
+df_whiz_zip['findings_start_date'] = pd.to_datetime(df_whiz_zip[df_whiz_zip['findings_start_date']>'2000']['findings_start_date'])
+df_whiz_zip['findings_end_date'] = pd.to_datetime(df_whiz_zip[df_whiz_zip['findings_end_date']>'2000']['findings_end_date'])
 
-df_whiz.groupby(['findings_start_date_y', 'st_cd']).size().plot()
+# get year
+df_whiz_zip['findings_start_date_y'] = df_whiz_zip['findings_start_date'].apply(lambda x: x.year)
+df_whiz_zip['findings_end_date_y'] = df_whiz_zip['findings_end_date'].apply(lambda x: x.year)
+
+# county rank
+year = 2010
+county_rank = df_whiz_zip[df_whiz_zip['findings_start_date_y']==year].groupby(['state', 'county']).size().sort_values()
+top10_counties = county_rank[:-10:-1]
+top10_counties = top10_counties.reset_index()
+
+df_demo = pd.read_csv('data/census/county_wide_demographic-%04d.csv' % year, index_col=0)
+
+pd.merge(top10_counties, df_demo, left_on=['state', 'county'] , right_on=['STABNAME', 'CTYNAME'])
+
+top10_demo = pd.merge(top10_counties, df_demo, left_on=['state', 'county'] , right_on=['STABNAME', 'CTYNAME']).set_index('county')
+
+# visualize demographics for these counties
+for cty in top10_demo.index:
+
+    ax = top10_demo.loc[cty][5:17].plot.pie(figsize=(6,6), autopct='%.2f', labels=None, title=top10_demo.loc[cty]['state'] + ': ' + cty)
+    ax.legend(loc=3, labels=top10_demo.columns[5:17])
+    ax.set_ylabel('')
+    plt.show()
+
+
+# # visualize count of lvl2 naic description
+# fig, ax = plt.subplots(figsize=(6,8))
+# df_whiz_h.groupby('naic_description_lvl2').size().plot(kind='bar', ax=ax)
+# fig.show()
+
+
+# df_whiz_zip.groupby(['findings_start_date_y', 'st_cd']).size().plot()
+df_whiz_zip.groupby(['findings_start_date_y']).size().plot()
+plt.xlim([2007, 2016])
 plt.show()
 
 
-states = df_whiz['st_cd'].unique()[:-1]
+# df_whiz['findings_start_date'] = pd.to_datetime(df_whiz[df_whiz['findings_start_date']>'1900']['findings_start_date'])
+# df_whiz['findings_end_date'] = pd.to_datetime(df_whiz[df_whiz['findings_end_date']>'1900']['findings_end_date'])
+
+df_whiz_zip['findings_start_date_m'] = df_whiz_zip['findings_start_date'].apply(lambda x: x.month)
+df_whiz_zip['findings_end_date_m'] = df_whiz_zip['findings_end_date'].apply(lambda x: x.month)
+
+# df_ncases = pd.DataFrame(df_whiz.groupby(['findings_start_date_y', 'st_cd']).size())
+
+df_whiz_zip.groupby(['findings_end_date_m']).size().plot()
+plt.show()
+
+
+states = df_whiz_zip['st_cd'].unique()[:-1]
 
 cts_by_st_y = []
 for st in states:
-    df_whiz[df_whiz['st_cd'] == st].groupby('findings_start_date_y').size()
-    df_tmp = pd.DataFrame(df_whiz[df_whiz['st_cd'] == st].groupby('findings_start_date_y').size())
+    df_whiz_zip[df_whiz_zip['st_cd'] == st].groupby('findings_start_date_y').size()
+    df_tmp = pd.DataFrame(df_whiz_zip[df_whiz_zip['st_cd'] == st].groupby('findings_start_date_y').size())
     df_tmp.columns = [st]
     cts_by_st_y.append(df_tmp)
 
@@ -85,9 +116,8 @@ ax = cts_by_st_y[states_vis].plot()
 ax.set_xlim([2000, 2016])
 plt.show()
 
-
 # load US census data to get population
-popd = pd.read_csv('data/census/ST-EST00INT-ALLDATA.csv')
+popd = pd.read_csv('data/census/original/ST-EST00INT-ALLDATA.csv')
 popd[(popd['SEX']==0) & (popd['ORIGIN']==0) & (popd['AGEGRP']==0) & (popd['RACE']==0)]
 
 pop_states = popd[(popd['SEX']==0) & (popd['ORIGIN']==0) & (popd['AGEGRP']==0) & (popd['RACE']==0)]
@@ -99,9 +129,7 @@ pop_states_2000 = pop_states_2000[
      u'POPESTIMATE2008', u'POPESTIMATE2009', u'POPESTIMATE2010']]
 pop_states_2000.index = pop_states_2000.NAME
 
-popd = pd.read_csv('data/census/SC-EST2015-ALLDATA6.csv')
-
-
+popd = pd.read_csv('data/census/original/SC-EST2015-ALLDATA6.csv')
 
 pop_states_2015 = popd[(popd['SEX']==0) & (popd['ORIGIN']==0)].groupby('NAME').sum()
 pop_states_2015 = pop_states_2015.iloc[:, 9:]
@@ -112,7 +140,7 @@ pop_states_2015 = pop_states_2015[
 pop_states = pd.concat([pop_states_2000.iloc[:,:-1], pop_states_2015], axis=1)
 pop_states = pop_states.drop('NAME', axis=1)
 
-st_abbrv = pd.read_csv('data/census/state_table.csv')
+st_abbrv = pd.read_csv('data/census/original/state_table.csv')
 st_abbrv = st_abbrv.set_index('name')
 
 # change index into abbreviation
@@ -135,7 +163,7 @@ VI - US Virgin Island
 """
 
 cts = cts_by_st_y.loc[range(2000, 2016)]
-cts = cts.drop(['AS', 'GU', 'MP', 'PR', 'VI'], axis=1)
+cts = cts.drop(['AS', 'GU', 'MP', 'PR'], axis=1)
 
 # VI -> VA
 
