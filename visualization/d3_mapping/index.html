@@ -67,9 +67,21 @@
       stroke: black;
     }
 
-    .legend .block {
-        width: 15px;
-        height: 15px;
+    #legend {
+      width: 500px;
+    }
+    #legend .block {
+      float: left;
+      width: 15px;
+      height: 15px;
+      margin-right: 2px;
+      line-height: 15px;
+    }
+    #legend .block.low-end {
+      width: 25px;
+    }
+    #legend .block.high-end {
+      width: 125px;
     }
 
     #reset {
@@ -104,16 +116,14 @@
       font-size: 18px;
     }
 
-    .q0-9 { fill:rgb(255,213,213) !important; }
-    .q1-9 { fill:rgb(255,170,170) !important; }
-    .q2-9 { fill:rgb(255,128,128) !important; }
-    .q3-9 { fill:rgb(255,85,85) !important; }
-    .q4-9 { fill:rgb(255,42,42) !important; }
-    .q5-9 { fill:rgb(255,0,0) !important; }
-    .q6-9 { fill:rgb(212,0,0) !important; }
-    .q7-9 { fill:rgb(170,0,0) !important;}
-    .q8-9 { fill:rgb(128,0,0) !important; }
-    .q9-9 { fill:rgb(85,0,0) !important; }
+    .q0-7 { fill:rgb(255,213,213) !important; background-color: rgb(255,213,213) !important;}
+    .q1-7 { fill:rgb(255,170,170) !important; background-color: rgb(255,170,170) !important;}
+    .q2-7 { fill:rgb(255,128,128) !important; background-color: rgb(255,128,128) !important;}
+    .q3-7 { fill:rgb(255,85,85) !important; background-color: rgb(255,85,85) !important;}
+    .q4-7 { fill:rgb(255,42,42) !important; background-color: rgb(255,42,42) !important;}
+    .q5-7 { fill:rgb(255,0,0) !important; background-color: rgb(255,0,0) !important;}
+    .q6-7 { fill:rgb(185,0,0) !important; background-color: rgb(185,0,0) !important;}
+    .q7-7 { fill:rgb(128,0,0) !important; background-color: rgb(128,0,0) !important;}
 
     button {
       padding: 10px 10px 10px 10px;
@@ -140,7 +150,7 @@
     <h1 id="page-title">Wage Theft in the United States</h1>
     <svg id="map" width="960" height="600"></svg>
     <button id="reset">Reset Map</button>
-    <svg class="legend" width="500">
+    <svg width ="0" height="0">
       <filter id="dropshadow" height="150%">
         <feGaussianBlur in="SourceAlpha" stdDeviation="5"/> <!-- stdDeviation is how much to blur -->
         <feOffset dx="2" dy="2" result="offsetblur"/> <!-- how much to offset -->
@@ -149,19 +159,19 @@
           <feMergeNode in="SourceGraphic"/> <!-- this contains the element that the filter is applied to -->
         </feMerge>
       </filter>
-      <text x="0" y="12">0 <</text>
-      <rect class="block q0-9" x="25"></rect>
-      <rect class="block q1-9" x="45"></rect>
-      <rect class="block q2-9" x="65"></rect>
-      <rect class="block q3-9" x="85"></rect>
-      <rect class="block q4-9" x="105"></rect>
-      <rect class="block q5-9" x="125"></rect>
-      <rect class="block q6-9" x="145"></rect>
-      <rect class="block q7-9" x="165"></rect>
-      <rect class="block q8-9" x="185"></rect>
-      <rect class="block q9-9" x="205"></rect>
-      <text x="225" y="12">> $1,000,000</text>
     </svg>
+    <div id="legend">
+      <div class="block low-end">0 <</div>
+      <div class="block q0-7" title=">0 - $125,000"></div>
+      <div class="block q1-7" title="$125,000 - $250,000"></div>
+      <div class="block q2-7" title="$250,000 - $375,000"></div>
+      <div class="block q3-7" title="$375,000 - $500,000"></div>
+      <div class="block q4-7" title="$500,000 - $625,000"></div>
+      <div class="block q5-7" title="$625,000 - $750,000"></div>
+      <div class="block q6-7" title="$750,000 - $875,000"></div>
+      <div class="block q7-7" title="$875,000 - >$1,000,000"></div>
+      <div class="block high-end">> 1,000,000</div>
+    </div>
     <div id="place-info">
       <h2 class="name">County or City Name</h2>
       <ul>
@@ -184,7 +194,7 @@
     
     var quantize = d3.scaleQuantize()
                     .domain([0, 1000000])
-                    .range(d3.range(10).map(function(i) { return "q" + i + "-9"; }));
+                    .range(d3.range(8).map(function(i) { return "q" + i + "-7"; }));
 
     var projection = d3.geoAlbersUsa()
                       .scale(1280)
@@ -252,7 +262,7 @@
     }
 
     function clicked(d) {
-      $('#place-info').fadeIn('500');
+      //$('#place-info').fadeIn('500');
 
       var x, y, k;
 
