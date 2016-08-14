@@ -1,5 +1,7 @@
 conda create --name wage_theft_api python=2 flask sqlalchemy -yf
 source activate wage_theft_api
+pip install flask_restful
+FLASK_APP="sql-server.py"
 
 # requirments.txt
 # python==2.7
