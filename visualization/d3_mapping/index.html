@@ -149,7 +149,7 @@
           <feMergeNode in="SourceGraphic"/> <!-- this contains the element that the filter is applied to -->
         </feMerge>
       </filter>
-      <text x="0" y="12">0 <</text>
+      <text x="0" y="12">0 </text>
       <rect class="block q0-9" x="25"></rect>
       <rect class="block q1-9" x="45"></rect>
       <rect class="block q2-9" x="65"></rect>
@@ -197,10 +197,16 @@
 
     d3.queue()
       .defer(d3.json, "us.json")
+      /*
       .defer(d3.csv, "fips_backwages.csv",
         function(d) {
           rateById.set(d.id, +d.amount);
                     })
+       */
+      .defer(d3.csv, "fips_data1.csv",
+         function(d) {
+           rateById.set(d.id, +(d.fine));
+          })
       .defer(d3.csv, "US_Cities_Lat_LonSmall_2.csv")
       .await(ready);
 
@@ -213,6 +219,8 @@
           .data(topojson.feature(us, us.objects.counties).features)
         .enter().append("path")
           .attr("class", function(d) {
+                console.log(rateById.get(d.id))
+
             return quantize(rateById.get(d.id));
           })
           .attr("d", path)
