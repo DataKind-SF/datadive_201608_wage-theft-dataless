@@ -1,9 +1,12 @@
+#!/usr/bin/env python
+
+from json import dumps
+
 from flask import Flask, request
 from flask_restful import Resource, Api, reqparse
 from sqlalchemy import create_engine
-from json import dumps
 
-#Create a engine for connecting to SQLite3.
+# Create a engine for connecting to SQLite3.
 
 e = create_engine('sqlite:///./db.sqlite')
 

@@ -27,12 +27,11 @@ def _get_col_datatypes(fin):
 
     return fieldTypes
 
-
 def escapingGenerator(f):
     for line in f:
         yield line.encode("ascii", "xmlcharrefreplace").decode("ascii")
 
-def csvToDb(csvFile, tableName, primary_key, outputToFile = False):
+def csvToDb(csvFile, tableName, primary_key, outputToFile=False):
 
     with open(csvFile, mode='r', encoding="ISO-8859-1") as fin:
         dt = _get_col_datatypes(fin)
@@ -78,5 +77,9 @@ def csvToDb(csvFile, tableName, primary_key, outputToFile = False):
 
     return con
 
-# Run from inside scripts/ folder, TODO: Configure
-print csvToDb('../whd_whisard.csv', "whd_whisard", "case_id", "./db.sqlite")
+if __name__ == "__main__":
+    path = ("../") # path = ('/Users/brian/Dropbox/datadive_wagetheft/data/') #TODO: Move to configure
+    csvToDb(csvFile=path+'whd_whisard.csv', 
+            tableName="whd_whisard", 
+            primary_key="case_id", 
+            outputToFile="./db.sqlite")
