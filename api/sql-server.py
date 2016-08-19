@@ -17,7 +17,7 @@ parser = reqparse.RequestParser(bundle_errors=True)
 class CaseList(Resource):
     def get(self):
         conn = e.connect()
-        stmt = "select * from whd_whisard limit 10" # temp limit, can update
+        stmt = "select * from cases limit 10" # temp limit, can update
         query = conn.execute(stmt)
         rows = query.cursor.fetchall()
         keys = [member[0] for member in query.cursor.description] # get all column names
@@ -35,9 +35,9 @@ class CaseList(Resource):
 class Case(Resource):
     def get(self, case_id=None):
         conn = e.connect()
-        stmt = "select * from whd_whisard"
+        stmt = "select * from cases"
         if (case_id is not None):
-            stmt += " where case_id=" + str(case_id)
+            stmt += " where [Case ID]=" + str(case_id)
         query = conn.execute(stmt)
 
         result = query.cursor.fetchall()[0]
@@ -52,9 +52,9 @@ class Case(Resource):
 class CasesByZip(Resource):
     def get(self, zip_cd=None):
         conn = e.connect()
-        stmt = "select * from whd_whisard"
+        stmt = "select * from cases"
         if (zip_cd is not None):
-            stmt += " where zip_cd=" + str(zip_cd)
+            stmt += " where [Zip Code]=" + str(zip_cd)
         query = conn.execute(stmt)
         rows = query.cursor.fetchall()
         keys = [member[0] for member in query.cursor.description]
@@ -73,9 +73,9 @@ class CasesByZip(Resource):
 class CasesByNAICCd(Resource):
     def get(self, naic_cd=None):
         conn = e.connect()
-        stmt = "select * from whd_whisard"
+        stmt = "select * from cases"
         if (naic_cd is not None):
-            stmt += " where naic_cd=" + str(naic_cd)
+            stmt += " where [Full NAICS Code]=" + str(naic_cd)
         query = conn.execute(stmt)
         rows = query.cursor.fetchall()
         keys = [member[0] for member in query.cursor.description]
