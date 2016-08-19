@@ -2,7 +2,19 @@ import csv
 import logging
 from io import open
 import sqlite3
+import sys
+file_name = sys.argv[1]
+if len(file_name) == 0:
+    raise Exception("No filename given as a paramater")
 
+table_name = sys.argv[2]
+if len(table_name) == 0:
+    raise Exception("No table name given as a paramater")
+
+primary_key = sys.argv[3]
+if len(table_name) == 0:
+    raise Exception("No primary key given as a paramater")
+        
 def _get_col_datatypes(fin):
     dr = csv.DictReader(fin) # comma is default delimiter
     fieldTypes = {}
@@ -79,7 +91,7 @@ def csvToDb(csvFile, tableName, primary_key, outputToFile=False):
 
 if __name__ == "__main__":
     path = ("../") # path = ('/Users/brian/Dropbox/datadive_wagetheft/data/') #TODO: Move to configure
-    csvToDb(csvFile=path+'whd_whisard.csv', 
-            tableName="whd_whisard", 
-            primary_key="case_id", 
+    csvToDb(csvFile=path+file_name, 
+            tableName=table_name, 
+            primary_key=primary_key, 
             outputToFile="./db.sqlite")
