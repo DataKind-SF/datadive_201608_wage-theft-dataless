@@ -1,0 +1,56 @@
+++COMMAND LINE COMMANDS TO IMPORT DATA++
+python csv-to-sqlite3.py whd_whisard.csv whd_whisard case_id
+python csv-to-sqlite3.py 2012_NAICS_Structure.cleaned.csv NAICS_descriptions NAICS_code
+python csv-to-sqlite3.py whd_caseid_geocodes_20160815.csv whd_whisard_caseid_geocodes case_id
+python csv-to-sqlite3.py fips_to_zip_map.csv zip_to_county zip
+
+
+
+++SQL COMMANDS TO CREATE VIEWS++
+
+#these 3 views just limit the table to only the NAICS 2, 3, or 4 so that they can
+#then be joined in as the descriptions for each case
+
+DROP VIEW IF EXISTS NAICS2_descriptions;
+CREATE VIEW NAICS2_descriptions AS SELECT * from NAICS_descriptions where length(NAICS_code) = 2;
+
+DROP VIEW IF EXISTS NAICS3_descriptions;
+CREATE VIEW NAICS3_descriptions AS SELECT * from NAICS_descriptions where length(NAICS_code) = 3;
+
+DROP VIEW IF EXISTS NAICS4_descriptions;
+CREATE VIEW NAICS4_descriptions AS SELECT * from NAICS_descriptions where length(NAICS_code) = 4;
+
+
+
+#this intermediate view is needed in order to create the NAICS2, 3, 4 columns
+#so they can later be used to join the fields.
+CREATE VIEW temp_whd AS
+SELECT *, substr(naic_cd,1,2) AS NAICS2, substr(naic_cd,1,3) AS NAICS3, substr(naic_cd,1,4) AS NAICS4
+FROM whd_whisard
+
+
+#and here is the big SELECT statement to create the main view that will
+#then be the source for the API’s queries
+DROP VIEW IF EXISTS cases;
+CREATE VIEW cases AS
+SELECT temp_whd.case_id AS [Case ID], trade_nm AS [Trade Name], legal_name AS [Legal Name], 
+	street_addr_1_txt AS [Street Address], cty_nm AS [City], st_cd AS [State], zip_cd AS [Zip Code], 
+	zip_to_county.county AS [County], zip_to_county.st_FIPS_code AS [State FIPS Code], 
+	zip_to_county.county_FIPS_code AS [County FIPS Code], state_county_FIPS AS [Combined State County FIPS],
+	naic_cd AS [Full NAICS Code], naics_code_description AS [Full NAICS Description], 
+	NAICS2, NAICS2_descriptions.NAICS_description AS [NAICS2 Description], 
+	NAICS3, NAICS3_descriptions.NAICS_description AS [NAICS3 Description],
+	NAICS4, NAICS4_descriptions.NAICS_description AS [NAICS4 Description],
+	cmp_assd_cnt AS [Civil Money Penalties], bw_atp_amt AS [Backwages], 
+	ee_violtd_cnt AS [Employees Owed Backwages], flsa_bw_atp_amt AS [Minimum Wage and Overtime Backwages],
+	flsa_ee_atp_cnt AS [Employees Owed Minimum Wage and Overtime Backwages], 
+	flsa_mw_bw_atp_amt AS [Minimum Wage Backwages], flsa_ot_bw_atp_amt AS [Overtime Backwages],
+	flsa_15a3_bw_atp_amt AS [Retaliation Backwages], 
+	whd_whisard_geocodes.lat AS [Lat], whd_whisard_geocodes.lon AS [Lon]
+FROM temp_whd
+LEFT OUTER JOIN whd_whisard_geocodes ON whd_whisard_geocodes.case_id = temp_whd.case_id
+LEFT OUTER JOIN zip_to_county ON zip_to_county.zip = temp_whd.zip_cd
+LEFT OUTER JOIN NAICS2_descriptions ON NAICS2_descriptions.NAICS_code = temp_whd.NAICS2
+LEFT OUTER JOIN NAICS3_descriptions ON NAICS3_descriptions.NAICS_code = temp_whd.NAICS3
+LEFT OUTER JOIN NAICS4_descriptions ON NAICS4_descriptions.NAICS_code = temp_whd.NAICS4
+
